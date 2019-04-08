@@ -112,7 +112,11 @@ public final class DropDown: UIView {
 	See `Direction` enum for more info.
 	*/
 	public var direction = Direction.any
-
+    
+    public var dropDownHeight: CGFloat = 0.0 {
+        didSet { setNeedsUpdateConstraints() }
+    }
+    
 	/**
 	The offset point relative to `anchorView` when the drop down is shown above the anchor view.
 
@@ -547,35 +551,43 @@ private extension DropDown {
 //MARK: - UI
 
 extension DropDown {
+    
+    
 
 	public override func updateConstraints() {
-		if !didSetupConstraints {
-			setupConstraints()
-		}
-
-		didSetupConstraints = true
-
-		let layout = computeLayout()
-
-		if !layout.canBeDisplayed {
-			super.updateConstraints()
-			hide()
-
-			return
-		}
-
-		xConstraint.constant = layout.x
-		yConstraint.constant = layout.y
-		widthConstraint.constant = layout.width
-		heightConstraint.constant = layout.visibleHeight
-
-		tableView.isScrollEnabled = layout.offscreenHeight > 0
-
-		DispatchQueue.main.async { [weak self] in
-			self?.tableView.flashScrollIndicators()
-		}
-
-		super.updateConstraints()
+        if !didSetupConstraints {
+            setupConstraints()
+        }
+        
+        didSetupConstraints = true
+        
+        let layout = computeLayout()
+        
+        if !layout.canBeDisplayed {
+            super.updateConstraints()
+            hide()
+            return
+        }
+        
+        xConstraint.constant = layout.x
+        yConstraint.constant = layout.y
+        widthConstraint.constant = layout.width
+        
+        // Change height of dropdown
+        if dropDownHeight > 0 && dropDownHeight <= layout.visibleHeight {
+            heightConstraint.constant = dropDownHeight
+        } else {
+            heightConstraint.constant = layout.visibleHeight
+        }
+        
+        // Enable scrolling if offscreen content or dropdown height is set
+        tableView.isScrollEnabled = layout.offscreenHeight > 0 || dropDownHeight > 0
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.tableView.flashScrollIndicators()
+        }
+        
+        super.updateConstraints()
 	}
 
 	fileprivate func setupConstraints() {
